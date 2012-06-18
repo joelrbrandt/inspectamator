@@ -29,12 +29,32 @@ define(function (require, exports, module) {
     'use strict';
     var Inspector = require("Inspector");
     Inspector.init();
+
+    function tableFor(obj) {
+    	if (typeof(obj) === 'number' || typeof(obj) === 'string' || obj === undefined || obj === null) {
+    		return document.createTextNode(obj);
+    	}
+
+    	var table = document.createElement('table');
+    	var headers = document.createElement('tr'); table.appendChild(headers);
+    	var values = document.createElement('tr'); table.appendChild(values);
+
+    	for (var field in obj) {
+    		var headerCell = document.createElement('th'); headers.appendChild(headerCell);
+    		var valueCell = document.createElement('td'); values.appendChild(valueCell);
+
+    		headerCell.appendChild( document.createTextNode(field) );
+    		valueCell.appendChild( tableFor(obj[field]) );
+    	}
+
+        return table;
+    }
     
     Inspector.connect("ws://127.0.0.1:9222/devtools/page/" + window.location.search.substr(1));
 	Inspector.on('message', function() { 
 		var args = [].splice.call(arguments,0);
 		console.log("got message", args);
-		$('#output').prepend("<p>" + JSON.stringify(args) + "</p>");
+		$('#output').prepend(tableFor(args[0]))
 	})
 
 	$('#go').click(function() {
