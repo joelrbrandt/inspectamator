@@ -41,4 +41,8 @@ define(function (require, exports, module) {
 		eval('Inspector.' + $("#command").val());
 	})
 
+	$('#clear').click(function() {
+		$('#output').empty();
+	})
+
 });
