@@ -17,3 +17,5 @@ Usage
     page ID in that URL).
 
 4.  Visit `inspectamator.html?XXX` where XXX is the page ID from the previous step.
+
+See the top of `Inspector.js` for documentation of its API (listening to events, etc).
