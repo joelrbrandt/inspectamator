@@ -2,6 +2,16 @@ div#output {
   font-family: monospace;
 }
 
+input#prefix {
+  border-radius: 3px 0 0 3px;
+  border-right: 1px solid #ccc;
+}
+
+input#command {
+  border-radius: 0 3px 3px 0;
+  border-left: 0;
+}
+
 div#output th {
   font-weight: bold;
 }
