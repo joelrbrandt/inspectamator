@@ -1,6 +1,12 @@
-th {
-	font-weight: bold;
+div#output {
+  font-family: monospace;
 }
-td {
-	border: 1px solid #ccc;
+
+div#output th {
+  font-weight: bold;
+}
+
+div#output td {
+  border: 1px solid #ccc;
+  white-space: pre;
 }
