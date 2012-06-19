@@ -49,12 +49,19 @@ define(function (require, exports, module) {
 
         return table;
     }
+
+    function log(obj) {
+        if (arguments.length > 1) {
+            obj = Array.prototype.slice.call(arguments);
+        }
+        $('#output').prepend(tableFor(obj));
+    }
     
     Inspector.connect("ws://127.0.0.1:9222/devtools/page/" + window.location.search.substr(1));
     Inspector.on('message', function() { 
         var args = [].splice.call(arguments,0);
         console.log("got message", args);
-        $('#output').prepend(tableFor(args[0]))
+        log(args[0]);
     })
 
     $('#go').click(function() {
@@ -64,5 +71,8 @@ define(function (require, exports, module) {
     $('#clear').click(function() {
         $('#output').empty();
     })
+
+    exports.tableFor = tableFor;
+    exports.log = log;
 
 });
