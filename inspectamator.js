@@ -30,10 +30,17 @@ define(function (require, exports, module) {
     var Inspector = require("Inspector");
     Inspector.init();
 
-    function tableFor(obj) {
+    function tableFor(obj, seen) {
         if (typeof(obj) === 'number' || typeof(obj) === 'string' || obj === undefined || obj === null) {
             return document.createTextNode(obj);
         }
+
+        if (seen && seen.indexOf(obj) !== -1) {
+            return document.createTextNode('...');
+        }
+
+        seen = (seen || []);
+        seen.push(obj);
 
         var table = document.createElement('table');
         var headers = document.createElement('tr'); table.appendChild(headers);
@@ -44,7 +51,7 @@ define(function (require, exports, module) {
             var valueCell = document.createElement('td'); values.appendChild(valueCell);
 
             headerCell.appendChild( document.createTextNode(field) );
-            valueCell.appendChild( tableFor(obj[field]) );
+            valueCell.appendChild( tableFor(obj[field]), seen );
         }
 
         return table;
