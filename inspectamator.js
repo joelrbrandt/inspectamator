@@ -32,7 +32,10 @@ define(function (require, exports, module) {
 
     function tableFor(obj, seen) {
         if (typeof(obj) === 'number' || typeof(obj) === 'string' || obj === undefined || obj === null) {
-            return document.createTextNode(obj);
+            var div = document.createElement('div');
+            div.className = 'value';
+            div.appendChild(document.createTextNode(obj));
+            return div;
         }
 
         if (seen && seen.indexOf(obj) !== -1) {
@@ -65,7 +68,7 @@ define(function (require, exports, module) {
     }
     
     Inspector.connect("ws://127.0.0.1:9222/devtools/page/" + window.location.search.substr(1));
-    Inspector.on('message', function() { 
+    Inspector.on('message', function () {
         var args = [].splice.call(arguments,0);
         console.log("got message", args);
         log(args[0]);

@@ -12,11 +12,29 @@ input#command {
   border-left: 0;
 }
 
+div#output table, div#output div.item {
+  border: 1px solid black;
+  border-radius: 5px 5px 5px;
+  padding: 4px;
+  margin: 4px;
+}
+
 div#output th {
   font-weight: bold;
 }
 
 div#output td {
   border: 1px solid #ccc;
+}
+
+div#output .value {
   white-space: pre;
+  border: 1px solid black;
+  border-radius: 5px 5px 5px;
+  padding: 4px;
+  margin: 4px;
+}
+
+div#output table table, div#output table .value {
+  border-width: 0;
 }
