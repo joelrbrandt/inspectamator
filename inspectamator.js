@@ -25,11 +25,20 @@
 /*jslint vars: true, plusplus: true, devel: true, nomen: true, indent: 4, maxerr: 50 */
 /*global define, $ */
 
+String.prototype.lpad = function(padString, length) {
+    var str = this;
+    while (str.length < length)
+        str = padString + str;
+    return str;
+}
+
 define(function (require, exports, module) {
     'use strict';
     var Inspector = require("Inspector");
     Inspector.init();
 
+    require('jslint'); // jslint isn't a proper module, so return value is undefined
+    
     function tableFor(obj, seen) {
         if (typeof(obj) === 'number' || typeof(obj) === 'string' || obj === undefined || obj === null) {
             var div = document.createElement('div');
@@ -85,5 +94,91 @@ define(function (require, exports, module) {
 
     exports.tableFor = tableFor;
     exports.log = log;
+
+    Inspector.on('connect', function () {
+        Inspector.Debugger.enable();
+        Inspector.on('Debugger.scriptParsed', function (ev) {
+            var scriptId = ev.scriptId;
+            Inspector.Debugger.getScriptSource(ev.scriptId, function (ev) {
+                var src = ev.scriptSource;
+                var lines = src.split('\n');
+
+                log({ scriptId: scriptId, source: $.map(lines, function (line, i) { return ('' + i).lpad(' ', 3) + ': ' + line }).join("\n") });
+
+                if (/^\n\/\/internal/.test(src)) {
+                    return;
+                }
+
+                // var loc = { scriptId: scriptId, lineNumber: 11, columnNumber: 0 };
+                // log('setting breakpoint at', loc, lines[loc.lineNumber].slice(loc.columnNumber));
+                // Inspector.Debugger.setBreakpoint(loc);
+                // // JSLINT(src);
+                // // console.log(JSLINT.tree)
+            });
+        });
+    });
+
+    var sources = {};
+
+    Inspector.on('Debugger.paused', function (ev) {
+        var topFrame = ev.callFrames[0];
+        var loc = topFrame.location;
+        if (ev.reason != 'other') return;
+
+        var f = function (src) {
+            var lines = src.split('\n');
+            var stopSrc = lines[loc.lineNumber].slice(loc.columnNumber);
+            log('stopped at', stopSrc);
+            if (stopSrc.indexOf('debugger;') == 0) {
+                showEditor(src, loc, 'debugger;'.length);
+            }
+        }
+
+        if (sources[loc.scriptId]) {
+            f(sources[loc.scriptId]);
+        } else {
+            Inspector.Debugger.getScriptSource(loc.scriptId, function (ev) {
+                sources[loc.scriptId] = ev.scriptSource;
+                f(ev.scriptSource);
+            });
+        }
+    });
+
+    function showEditor(src, loc, placeholderLength) {
+        var lines = src.split('\n');
+        var maxLineLength = Math.max.apply(Math, $.map(lines, function (line) { return line.length }));
+
+        var offset = 0;
+        for (var i = 0; i < loc.lineNumber; i++) {
+            offset += lines[i].length + 1;
+        }
+        offset += loc.columnNumber;
+
+        var container = $('<div class="item"></div>').appendTo($('#output'));
+
+        var srcBefore = lines.slice(0, loc.lineNumber).join('\n');
+        var srcAfter = lines.slice(loc.lineNumber + 1).join('\n');
+
+        $('<pre></pre>').appendTo(container).text(srcBefore);
+        container.append('<hr />');
+        var editor = CodeMirror(container.get(0), {
+            mode: 'javascript',
+            autofocus: true
+        });
+        var button = $('<button>Save</button>').appendTo(container).click(function () {
+            var newSrc = srcBefore + '\n' + editor.getValue() + '\n' + srcAfter;
+
+            sources[loc.scriptId] = newSrc;
+            Inspector.Debugger.setScriptSource(loc.scriptId, newSrc);
+
+            Inspector.Debugger.resume();
+            container.text('Saved!');
+            // container.empty().append($('<pre></pre>').text(newSrc));
+        });
+        // editor.setSelection({ line: loc.lineNumber, ch: loc.columnNumber },
+        //                     { line: loc.lineNumber, ch: loc.columnNumber + placeholderLength });
+        container.append('<hr />');
+        $('<pre></pre>').appendTo(container).text(srcAfter);
+    }
 
 });

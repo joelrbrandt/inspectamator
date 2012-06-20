@@ -38,3 +38,8 @@ div#output .value {
 div#output table table, div#output table .value {
   border-width: 0;
 }
+
+.CodeMirror-scroll {
+	height: auto;
+	overflow: visible;
+}

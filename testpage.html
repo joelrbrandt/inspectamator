@@ -1,0 +1,27 @@
+<script>
+
+Function.prototype.interesting = function () {
+  return this;
+};
+
+function bar(f) {
+  return f() + f();
+};
+
+function foo() {
+  var x = bar(function () {
+    var r = Math.random();
+    return Math.floor(r * 10);
+  });
+  debugger;
+  return x;
+};
+
+setInterval(function () {
+  var p = document.createElement('p');
+  p.appendChild( document.createTextNode( foo(42) ) );
+  document.getElementsByTagName('body')[0].appendChild(p);
+}, 1000);
+
+</script>
+<body></body>
