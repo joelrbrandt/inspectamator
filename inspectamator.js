@@ -64,7 +64,9 @@ define(function (require, exports, module) {
         if (arguments.length > 1) {
             obj = Array.prototype.slice.call(arguments);
         }
-        $('#output').prepend(tableFor(obj));
+        $('#output').append(tableFor(obj));
+        $('body').stop();
+        $('body').animate({ scrollTop: $('body').height() });
     }
     
     Inspector.connect("ws://127.0.0.1:9222/devtools/page/" + window.location.search.substr(1));
