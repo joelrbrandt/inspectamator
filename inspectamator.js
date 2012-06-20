@@ -72,7 +72,6 @@ define(function (require, exports, module) {
     Inspector.connect("ws://127.0.0.1:9222/devtools/page/" + window.location.search.substr(1));
     Inspector.on('message', function () {
         var args = [].splice.call(arguments,0);
-        console.log("got message", args);
         log(args[0]);
     })
 
