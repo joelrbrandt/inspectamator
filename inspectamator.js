@@ -119,19 +119,74 @@ define(function (require, exports, module) {
     });
 
     var sources = {};
+    var promises = [];
+
+    function getPromise(promiseId) {
+        for (var i in promises) {
+            if (promises[i].promiseId === promiseId) {
+                return promises[i];
+            }
+        }
+    }
+
+    Inspector.on('Debugger.globalObjectCleared', function () {
+        sources = {};
+        promises = [];
+        $('#output').empty();
+    });
 
     Inspector.on('Debugger.paused', function (ev) {
-        var topFrame = ev.callFrames[0];
-        var loc = topFrame.location;
-        if (ev.reason != 'other') return;
+        var loc = ev.callFrames[0].location;
+        var callFrames = ev.callFrames;
 
         var f = function (src) {
             var lines = src.split('\n');
+
+            if (callFrames[0].functionName == 'Function.promise') {
+                // new promise
+
+                var realLoc = callFrames[2].location;
+                var realSrc = lines[realLoc.lineNumber].slice(realLoc.columnNumber)
+                var length = 0;
+
+                var regexp = /^todo(?:\s*\(\s*\)\s*;?)?/;
+                var match = regexp.exec(realSrc);
+                if (match) {
+                    var length = match[0].length;
+                } else {
+                    log('warning: did not match', realSrc)
+                }
+
+                Inspector.Debugger.evaluateOnCallFrame(callFrames[0].callFrameId, 'this.promiseId', 'promises', false, true, function (ev) {
+                    var promise = { loc: realLoc, length: length, promiseId: ev.result.value };
+                    promises.push(promise);
+                    // log('got a promise', promise);
+
+                    Inspector.Debugger.resume();
+                });
+            } else {
+                Inspector.Debugger.evaluateOnCallFrame(callFrames[0].callFrameId, 'this.promiseId', 'promises', false, true, function (ev) {
+                    var promise = getPromise(ev.result.value);
+                    if (promise) {
+                        // log('promise!', promise);
+                        Inspector.Debugger.evaluateOnCallFrame(callFrames[0].callFrameId, 'this.arguments.length', 'promises', false, true, function (ev) {
+                            var makeArgsStr = function (count) {
+                                return ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].slice(0, count).join(', ');
+                            };
+                            var prefix = 'function (' + makeArgsStr(ev.result.value) + ') {\n  ';
+                            var suffix = '\n}';
+                            showEditor(src, promise.loc, promise.length, prefix, suffix, callFrames);
+                        });
+                    } else {
+                        log('not promise', ev.result);
+                    }
+                });
+            }
+
+            return;
+
             var stopSrc = lines[loc.lineNumber].slice(loc.columnNumber);
             log('stopped at', stopSrc);
-            if (stopSrc.indexOf('debugger;') == 0) {
-                showEditor(src, loc, 'debugger;'.length);
-            }
         }
 
         if (sources[loc.scriptId]) {
@@ -144,7 +199,7 @@ define(function (require, exports, module) {
         }
     });
 
-    function showEditor(src, loc, placeholderLength) {
+    function showEditor(src, loc, placeholderLength, prefix, suffix, callFrames) {
         var lines = src.split('\n');
         var maxLineLength = Math.max.apply(Math, $.map(lines, function (line) { return line.length }));
 
@@ -157,26 +212,49 @@ define(function (require, exports, module) {
         var container = $('<div class="item"></div>').appendTo($('#output'));
 
         var srcBefore = lines.slice(0, loc.lineNumber).join('\n');
+        var srcLineBefore = lines[loc.lineNumber].substr(0, loc.columnNumber).trim();
+        var srcLineAfter = lines[loc.lineNumber].substr(loc.columnNumber + placeholderLength).trim();
         var srcAfter = lines.slice(loc.lineNumber + 1).join('\n');
+
+        if (srcLineBefore) { srcBefore += '\n' + srcLineBefore }
+        if (srcLineAfter) { srcAfter = srcLineAfter + '\n' + srcAfter }
+
+        var prefixLines = prefix.split('\n');
 
         $('<pre></pre>').appendTo(container).text(srcBefore);
         container.append('<hr />');
         var editor = CodeMirror(container.get(0), {
             mode: 'javascript',
-            autofocus: true
+            autofocus: true,
+            value: prefix + suffix
         });
+        editor.setCursor({ line: prefixLines.length - 1, ch: prefixLines[prefixLines.length - 1].length });
         var button = $('<button>Save</button>').appendTo(container).click(function () {
             var newSrc = srcBefore + '\n' + editor.getValue() + '\n' + srcAfter;
 
-            sources[loc.scriptId] = newSrc;
-            Inspector.Debugger.setScriptSource(loc.scriptId, newSrc);
+            Inspector.Debugger.evaluateOnCallFrame(callFrames[0].callFrameId, 'this.impl = ' + editor.getValue(), 'promises', false, true, function (ev) {
+                sources[loc.scriptId] = newSrc;
+                Inspector.Debugger.setScriptSource(loc.scriptId, newSrc);
 
-            Inspector.Debugger.resume();
-            container.text('Saved!');
-            // container.empty().append($('<pre></pre>').text(newSrc));
+                Inspector.Debugger.resume();
+                container.text('Saved!');
+            });
         });
-        // editor.setSelection({ line: loc.lineNumber, ch: loc.columnNumber },
-        //                     { line: loc.lineNumber, ch: loc.columnNumber + placeholderLength });
+        var button = $('<button>Cancel</button>').appendTo(container).click(function () {
+            Inspector.Debugger.resume();
+            container.text('Canceled!');
+        });
+        container.append('<hr />')
+        container.append('Console:')
+        var konsole = $('<input />').appendTo(container).keypress(function (e) {
+            if (e.keyCode == 13) {
+                Inspector.Debugger.evaluateOnCallFrame(callFrames[0].callFrameId, 'htmlTableFor(' + $(this).val() + ')', 'promises', false, true, function (ev) {
+                    log('console result', ev.result);
+                });
+                e.preventDefault();
+                return;
+            }
+        });
         container.append('<hr />');
         $('<pre></pre>').appendTo(container).text(srcAfter);
     }
