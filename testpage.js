@@ -1,31 +1,79 @@
-var promiseId = 0;
+/*jslint vars: true, debug: true */
+/*global document, $ */
 
-Function.prototype.promise = function () {
-  this.promiseId = promiseId++;
-  debugger;
-  return this.bind(this);
+var nextLaterId = 0;
+
+Function.prototype.later = function () {
+    'use strict';
+    nextLaterId += 1;
+    this.laterId = nextLaterId;
+    debugger;
+    return this.bind(this);
+};
+
+function later() {
+    'use strict';
+    return function () {
+        if (this.impl) {
+            this.impl.apply(this, arguments);
+        } else {
+            debugger;
+            if (this.impl) {
+                this.impl.apply(this, arguments);
+            }
+        }
+    }.later();
 }
 
-function todo() {
-  return function () {
-    if (this.impl) {
-      this.impl.apply(this, arguments);
-    } else {
-      debugger;
-      if (this.impl) {
-        this.impl.apply(this, arguments);
-      }
-    }
-  }.promise();
+
+
+
+
+
+
+
+function dumb() { return function () { alert('poop') } };
+
+function registerEventHandlers() {
+    'use strict';
+    
+    var answer = 42;
+    
+    document.getElementById('button').addEventListener('click', function () {
+        'use strict';
+        alert('hi');
+    });
+    
+    document.getElementById('button2').addEventListener('click', function () {
+        $.getJSON('http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?',
+                  { tags: "cat", tagmode: "any", format: "json" }, later())
+            .error(later());
+    });
 }
 
+registerEventHandlers();
 
 
-button.addEventListener('click', todo());
 
-button2.addEventListener('click', function () {
-  $.getJSON('http://api.flickr.com/services/feeds/photos_public.gne?jsoncallback=?', { tags: "cat", tagmode: "any", format: "json" }, todo()).error(todo());
-});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 $.each(data.items, function (i, item) {
@@ -36,8 +84,15 @@ $.each(data.items, function (i, item) {
 
 
 
+
+
+
+
+
+
 function tableFor(obj, seen) {
-    if (typeof(obj) === 'number' || typeof(obj) === 'string' || obj === undefined || obj === null) {
+    'use strict';
+    if (typeof obj === 'number' || typeof obj === 'string' || obj === undefined || obj === null) {
         var div = document.createElement('div');
         div.className = 'value';
         div.appendChild(document.createTextNode(obj));
@@ -52,21 +107,30 @@ function tableFor(obj, seen) {
     seen.push(obj);
 
     var table = document.createElement('table');
-    var headers = document.createElement('tr'); table.appendChild(headers);
-    var values = document.createElement('tr'); table.appendChild(values);
+    var headers = document.createElement('tr');
+    var values = document.createElement('tr');
+    
+    table.appendChild(headers);
+    table.appendChild(values);
 
-    for (var field in obj) {
-        var headerCell = document.createElement('th'); headers.appendChild(headerCell);
-        var valueCell = document.createElement('td'); values.appendChild(valueCell);
+    var field;
+    /*jslint forin: true */
+    for (field in obj) {
+        var headerCell = document.createElement('th');
+        var valueCell = document.createElement('td');
+        
+        headers.appendChild(headerCell);
+        values.appendChild(valueCell);
 
-        headerCell.appendChild( document.createTextNode(field) );
-        valueCell.appendChild( tableFor(obj[field]), seen );
+        headerCell.appendChild(document.createTextNode(field));
+        valueCell.appendChild(tableFor(obj[field]), seen);
     }
 
     return table;
 }
 
 function htmlTableFor(obj) {
+    'use strict';
     var target = tableFor(obj);
     var wrap = document.createElement('div');
     wrap.appendChild(target);

@@ -98,6 +98,7 @@ define(function (require, exports, module) {
     Inspector.on('connect', function () {
         Inspector.Debugger.enable();
         Inspector.on('Debugger.scriptParsed', function (ev) {
+            log(ev);
             var scriptId = ev.scriptId;
             Inspector.Debugger.getScriptSource(ev.scriptId, function (ev) {
                 var src = ev.scriptSource;
@@ -149,7 +150,7 @@ define(function (require, exports, module) {
                 var realSrc = lines[realLoc.lineNumber].slice(realLoc.columnNumber)
                 var length = 0;
 
-                var regexp = /^todo(?:\s*\(\s*\)\s*;?)?/;
+                var regexp = /^later(?:\s*\(\s*\)\s*;?)?/;
                 var match = regexp.exec(realSrc);
                 if (match) {
                     var length = match[0].length;
@@ -161,6 +162,7 @@ define(function (require, exports, module) {
                     var promise = { loc: realLoc, length: length, promiseId: ev.result.value };
                     promises.push(promise);
                     // log('got a promise', promise);
+                    log('got a later');
 
                     Inspector.Debugger.resume();
                 });
