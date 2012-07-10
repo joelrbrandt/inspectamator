@@ -34,11 +34,13 @@ String.prototype.lpad = function(padString, length) {
 
 define(function (require, exports, module) {
     'use strict';
+
     var Inspector = require("Inspector");
+    var Async = require('Async');
+    require('jslint'); // jslint isn't a proper module, so return value is undefined
+
     Inspector.init();
 
-    require('jslint'); // jslint isn't a proper module, so return value is undefined
-    
     function tableFor(obj, seen) {
         if (typeof(obj) === 'number' || typeof(obj) === 'string' || obj === undefined || obj === null) {
             var div = document.createElement('div');
@@ -130,6 +132,51 @@ define(function (require, exports, module) {
         }
     }
 
+    function displayStack(callFrames) {
+        var dom = $('#debugger');
+        var displayFrame = function (frame) {
+            var result = $.Deferred(), promise = result.promise();
+
+            dom.append($('<h2></h2>').text(frame.functionName + ' (this: ' + frame.this.className + ')'));
+
+            Async.doSequentially(frame.scopeChain, displayScope).done(function () {
+                result.resolve();
+            });
+
+            return promise;
+        };
+        var displayScope = function (scope) {
+            var result = $.Deferred(), promise = result.promise();
+
+            dom.append($('<h3></h3>').text(scope.type));
+
+            var varsDom = $('<div>&#8230;</div>').appendTo(dom);
+
+            if (scope.type !== 'global') {
+                Inspector.Runtime.getProperties(scope.object.objectId, function (ev) {
+                    varsDom.empty();
+                    for (var i in ev.result) {
+                        var v = ev.result[i];
+                        varsDom.append(tableFor({
+                            name: v.name,
+                            value: {
+                                type: v.value.type,
+                                value: v.value.value,
+                                className: v.value.className,
+                                description: v.value.description
+                            }
+                        }));
+                    }
+                });
+            }
+
+            result.resolve();
+            return promise;
+        };
+        dom.empty();
+        Async.doSequentially(callFrames, displayFrame);
+    };
+
     Inspector.on('Debugger.globalObjectCleared', function () {
         sources = {};
         promises = [];
@@ -137,6 +184,8 @@ define(function (require, exports, module) {
     });
 
     Inspector.on('Debugger.paused', function (ev) {
+        displayStack(ev.callFrames);
+
         var loc = ev.callFrames[0].location;
         var callFrames = ev.callFrames;
 
@@ -190,7 +239,7 @@ define(function (require, exports, module) {
             var stopSrc = lines[loc.lineNumber].slice(loc.columnNumber);
             log('stopped at', stopSrc);
 
-            Inspector.Debugger.evaluateOnCallFrame(callFrames[0].callFrameId, 'JSON.stringify(arguments.callee._prebugInfo)', 'blahblahgcgroup', false, true);
+            // Inspector.Debugger.evaluateOnCallFrame(callFrames[0].callFrameId, 'JSON.stringify(arguments.callee._prebugInfo)', 'blahblahgcgroup', false, true);
         }
 
         if (sources[loc.scriptId]) {

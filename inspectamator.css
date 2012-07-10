@@ -14,6 +14,18 @@ div#input {
 
 div#output {
   font-family: monospace;
+  padding-left: 400px;
+}
+
+div#debugger {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 400px;
+  border-right: 1px solid #ccc;
+  overflow: auto;
+  background: white;
 }
 
 input#prefix {
@@ -26,22 +38,22 @@ input#command {
   border-left: 0;
 }
 
-div#output table, div#output div.item {
+table, div.item {
   border: 1px solid black;
   border-radius: 5px 5px 5px;
   padding: 4px;
   margin: 4px;
 }
 
-div#output th {
+th {
   font-weight: bold;
 }
 
-div#output td {
+td {
   border: 1px solid #ccc;
 }
 
-div#output .value {
+.value {
   white-space: pre;
   border: 1px solid black;
   border-radius: 5px 5px 5px;
@@ -49,7 +61,7 @@ div#output .value {
   margin: 4px;
 }
 
-div#output table table, div#output table .value {
+table table, table .value {
   border-width: 0;
 }
 
