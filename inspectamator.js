@@ -84,15 +84,23 @@ define(function (require, exports, module) {
     Inspector.on('message', function () {
         var args = [].splice.call(arguments,0);
         log(args[0]);
-    })
+    });
 
     $('#go').click(function() {
         eval('Inspector.' + $("#command").val());
-    })
+    });
 
     $('#clear').click(function() {
         $('#output').empty();
-    })
+    });
+
+    $('#debugger').on('click', 'button.resume', function () {
+        Inspector.Debugger.resume();
+    });
+    $('#debugger').on('click', 'button.reload', function () {
+        Inspector.Debugger.resume();
+        Inspector.Runtime.evaluate('window.location.reload()');
+    });
 
     exports.tableFor = tableFor;
     exports.log = log;
@@ -173,7 +181,6 @@ define(function (require, exports, module) {
             result.resolve();
             return promise;
         };
-        dom.empty();
         Async.doSequentially(callFrames, displayFrame);
     };
 
@@ -183,7 +190,16 @@ define(function (require, exports, module) {
         $('#output').empty();
     });
 
+    Inspector.on('Debugger.resumed', function (ev) {
+        $('#debugger').empty();
+        $('#debugger').append('<button class="resume" disabled="disabled">Resume</button>');
+        $('#debugger').append('<button class="reload">Reload</button>');
+    });
+
     Inspector.on('Debugger.paused', function (ev) {
+        $('#debugger').empty();
+        $('#debugger').append('<button class="resume">Resume</button>');
+        $('#debugger').append('<button class="reload">Reload</button>');
         displayStack(ev.callFrames);
 
         var loc = ev.callFrames[0].location;
